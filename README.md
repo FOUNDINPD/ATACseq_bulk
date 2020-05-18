@@ -1,5 +1,6 @@
 # ATACseq_bulk
-QC and pipeline of ATACseq bulk of FOUNDIN
+QC and pipeline of ATACseq bulk of FOUNDIN-PD
+
 Xylena Reed May 2020
 
 ### Typical pipeline below:
