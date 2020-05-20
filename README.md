@@ -10,7 +10,7 @@ Xylena Reed May 2020
 FILENAME=$1
 WORKINGDIR = /PATH/TO/WORKING/DIR/
 # start like this:
-# sbatch --cpus-per-task=20 --mem=100g --mail-type=BEGIN,END --time=8:00:00 mapping.sh SAMPLEID (e.g. PPMI3658_d0)
+# sbatch --cpus-per-task=20 --mem=100g --mail-type=BEGIN,END --time=8:00:00 ATACseq_bulk.sh SAMPLEID
 
 echo "$FILENAME"_R1_001.fastq.gz
 
@@ -26,7 +26,7 @@ fastqc /$WORKINGDIR/fastq/"$FILENAME"_R2_001.fastq.gz
 
 module load bowtie/2-2.4.1
 
-bowtie2 -p 10 --local -x /data/reedx/FBn_ATACseq/GRCh38/Sequence/Bowtie2Index/genome -1 /$WORKINGDIR/fastq/"$FILENAME"_R1_001.fastq.gz -2 /$WORKINGDIR/fastq/"$FILENAME"_R2_001.fastq.gz -S /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam
+bowtie2 -p 10 --local -x /$WORKINGDIR/GRCh38/Sequence/Bowtie2Index/genome -1 /$WORKINGDIR/fastq/"$FILENAME"_R1_001.fastq.gz -2 /$WORKINGDIR/fastq/"$FILENAME"_R2_001.fastq.gz -S /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam
 
 echo 'wc -l aligned'
 wc -l /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam
@@ -34,10 +34,10 @@ wc -l /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam
 echo 'wc -l chrM'
 grep chrM /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam | wc -l
 
-echo 'wc -l chrUn'
-grep chrUn /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam | wc -l
+echo 'wc -l random'
+grep random /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam | wc -lt
 
-sed '/chrM/d;/random/d' < /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam > /$WORKINGDIR/mapped_reads/"$FILENAME"_removedchrs.sam
+sed '/chrM/d;/random/d;/chrUn/d' < /$WORKINGDIR/mapped_reads/"$FILENAME"_aligned.sam > /$WORKINGDIR/mapped_reads/"$FILENAME"_removedchrs.sam
 
 module load samtools/1.3.1
 
@@ -63,5 +63,15 @@ rm /$WORKINGDIR/mapped_reads/"$FILENAME"_filtered.sam
 rm /$WORKINGDIR/mapped_reads/"$FILENAME"_sorted.bam
 
 # Compile sequencing statistics from slurm*.out files into an Excel file
+
+module load macs/2.1.2
+
+# Peaks representing Nucleosome Free Regions (NFRs)
+
+macs2 callpeak -t /$WORKINGDIR/mapped_reads/"$FILENAME"_filtered.bam -n /$WORKINGDIR/peaks/"$FILENAME"_NFRs --nomodel --shift -100 --extsize 200 --format BAM -g hs
+
+# regular peak calling 
+
+macs2 callpeak --nomodel -B -f BAMPE -t /$WORKINGDIR/mapped_reads/"$FILENAME"_filtered.bam -n /$WORKINGDIR/peaks/"$FILENAME"_orig --nolambda --keep-dup all --gsize hs
 
 ```
